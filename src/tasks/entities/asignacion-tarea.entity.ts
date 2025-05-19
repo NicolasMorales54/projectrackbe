@@ -10,13 +10,13 @@ import { User } from 'src/users/entities/user.entity';
 import { Task } from 'src/tasks/entities/task.entity';
 
 @Entity('asignaciones_tareas')
-@Unique(['tareaId', 'usuarioId'])
+@Unique(['taskId', 'usuarioId'])
 export class AsignacionTarea {
   @PrimaryGeneratedColumn({ name: 'id_asignacion_tarea' })
   id: number;
 
   @Column({ name: 'id_tarea' })
-  tareaId: number;
+  taskId: number;
 
   @ManyToOne(() => Task)
   @JoinColumn({ name: 'id_tarea' })

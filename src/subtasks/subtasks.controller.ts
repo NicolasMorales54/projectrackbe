@@ -8,6 +8,7 @@ import {
   Delete,
 } from '@nestjs/common';
 
+import { AsignacionSubtarea } from './entities/asignacion-subtarea.entity';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { SubtasksService } from './subtasks.service';
@@ -75,5 +76,18 @@ export class SubtasksController {
     @Body() dto: UpdateSubtaskDto,
   ) {
     return this.subtasksService.updateForProject(+projectId, +id, dto);
+  }
+
+  @Get(':id/assignments')
+  async getAssignmentsAndCreator(@Param('id') id: string) {
+    return this.subtasksService.getSubtaskWithAssignmentsAndCreator(+id);
+  }
+
+  @Post(':id/assignments')
+  async assignUserToSubtask(
+    @Param('id') id: string,
+    @Body() body: { userId: number },
+  ) {
+    return this.subtasksService.assignUserToSubtask(+id, body.userId);
   }
 }

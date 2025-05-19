@@ -1,7 +1,9 @@
+import { User } from 'src/users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
+import { AsignacionSubtarea } from './entities/asignacion-subtarea.entity';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { Subtask } from './entities/subtask.entity';
@@ -11,6 +13,8 @@ export class SubtasksService {
   constructor(
     @InjectRepository(Subtask)
     private readonly subtaskRepository: Repository<Subtask>,
+    @InjectRepository(AsignacionSubtarea)
+    private readonly asignacionSubtareaRepository: Repository<AsignacionSubtarea>,
   ) {}
 
   create(createSubtaskDto: CreateSubtaskDto) {
@@ -71,5 +75,47 @@ export class SubtasksService {
     if (!subtask) throw new Error('Subtask not found for this project');
     Object.assign(subtask, dto);
     return this.subtaskRepository.save(subtask);
+  }
+
+  async getSubtaskAssignments(subtaskId: number) {
+    // Get all users assigned to this subtask
+    const assignments = await this.asignacionSubtareaRepository.find({
+      where: { subtaskId },
+      relations: ['usuario'],
+    });
+    return assignments.map((a) => ({
+      id: a.id,
+      user: a.usuario,
+    }));
+  }
+
+  async getSubtaskWithAssignmentsAndCreator(subtaskId: number) {
+    // Get subtask with its creator and assigned users
+    const subtask = await this.subtaskRepository.findOne({
+      where: { id: subtaskId },
+      relations: ['task', 'task.creadoPor'],
+    });
+    if (!subtask) throw new Error('Subtask not found');
+    const assignments = await this.getSubtaskAssignments(subtaskId);
+    return {
+      subtask,
+      createdBy: subtask.task ? subtask.task.creadoPor : null,
+      assigned: assignments.map((a) => a.user),
+    };
+  }
+
+  async assignUserToSubtask(subtaskId: number, userId: number) {
+    // Prevent duplicate assignment
+    const exists = await this.asignacionSubtareaRepository.findOne({
+      where: { subtaskId, userId },
+    });
+    if (exists) {
+      throw new Error('User already assigned to this subtask');
+    }
+    const assignment = this.asignacionSubtareaRepository.create({
+      subtaskId,
+      userId,
+    });
+    return this.asignacionSubtareaRepository.save(assignment);
   }
 }

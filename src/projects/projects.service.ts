@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, In } from 'typeorm';
 
 import { AsignarUsuarioProyectoDto } from './dto/asignar-usuario-proyecto.dto';
 import { UsuarioProyecto } from './entities/usuario-proyecto.entity';
@@ -70,5 +70,21 @@ export class ProjectsService {
       grouped[estado].push(up.proyecto);
     }
     return grouped;
+  }
+
+  async findUsersNotInProject(projectId: number) {
+    // Get all user IDs in the project
+    const userProjects = await this.usuarioProyectoRepository.find({
+      where: { proyectoId: projectId },
+      select: ['usuarioId'],
+    });
+    const userIdsInProject = userProjects.map((up) => up.usuarioId);
+    // Find all users not in the project
+    const usersRepo =
+      this.usuarioProyectoRepository.manager.getRepository('User');
+    const where =
+      userIdsInProject.length > 0 ? { id: Not(In(userIdsInProject)) } : {};
+    const users = await usersRepo.find({ where });
+    return users;
   }
 }

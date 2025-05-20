@@ -58,4 +58,9 @@ export class ProjectsController {
   groupByEstadoAndUserId(@Param('userId', ParseIntPipe) userId: number) {
     return this.projectsService.groupByEstadoAndUserId(userId);
   }
+
+  @Get(':id/users-not-in-project')
+  async getUsersNotInProject(@Param('id') id: string) {
+    return this.projectsService.findUsersNotInProject(+id);
+  }
 }

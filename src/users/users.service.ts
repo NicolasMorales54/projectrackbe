@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { UsuarioProyecto } from '../projects/entities/usuario-proyecto.entity';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './entities/user.entity';
@@ -76,5 +77,33 @@ export class UsersService {
       const { contrasena, ...user } = up.usuario;
       return user;
     });
+  }
+
+  async updatePassword(id: number, dto: UpdatePasswordDto) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+    if (!user.contrasena) throw new Error('User has no password set');
+    const isMatch = await bcrypt.compare(dto.currentPassword, user.contrasena);
+    if (!isMatch) throw new Error('Current password is incorrect');
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    user.contrasena = hashed;
+    await this.userRepository.save(user);
+    const { contrasena, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async updatePasswordByEmail(email: string, dto: UpdatePasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: { correoElectronico: email },
+    });
+    if (!user) throw new Error('User not found');
+    if (!user.contrasena) throw new Error('User has no password set');
+    const isMatch = await bcrypt.compare(dto.currentPassword, user.contrasena);
+    if (!isMatch) throw new Error('Current password is incorrect');
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    user.contrasena = hashed;
+    await this.userRepository.save(user);
+    const { contrasena, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }

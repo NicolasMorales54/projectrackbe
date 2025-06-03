@@ -41,6 +41,60 @@ export class ProjectsService {
   }
 
   async remove(id: number) {
+    // 1. Obtener todas las tareas del proyecto
+    const tareas = await this.projectRepository.manager
+      .getRepository('Task')
+      .find({ where: { projectId: id } });
+    const tareaIds = tareas.map((t) => t.id);
+
+    // 2. Obtener todas las subtareas de las tareas
+    let subtareaIds: number[] = [];
+    if (tareaIds.length > 0) {
+      const subtareas = await this.projectRepository.manager
+        .getRepository('Subtask')
+        .find({ where: { taskId: In(tareaIds) } });
+      subtareaIds = subtareas.map((st) => st.id);
+    }
+
+    // 3. Eliminar asignaciones de subtareas
+    if (subtareaIds.length > 0) {
+      await this.projectRepository.manager
+        .getRepository('AsignacionSubtarea')
+        .delete({ subtaskId: In(subtareaIds) });
+    }
+
+    // 4. Eliminar subtareas
+    if (subtareaIds.length > 0) {
+      await this.projectRepository.manager
+        .getRepository('Subtask')
+        .delete({ id: In(subtareaIds) });
+    }
+
+    // 5. Eliminar asignaciones de tareas
+    if (tareaIds.length > 0) {
+      await this.projectRepository.manager
+        .getRepository('AsignacionTarea')
+        .delete({ taskId: In(tareaIds) });
+    }
+
+    // 6. Eliminar registros de tiempo
+    if (tareaIds.length > 0) {
+      await this.projectRepository.manager
+        .getRepository('TimeRegister')
+        .delete({ taskId: In(tareaIds) });
+    }
+
+    // 7. Eliminar tareas
+    if (tareaIds.length > 0) {
+      await this.projectRepository.manager
+        .getRepository('Task')
+        .delete({ id: In(tareaIds) });
+    }
+
+    // 8. Eliminar usuarios_proyectos
+    await this.usuarioProyectoRepository.delete({ proyectoId: id });
+
+    // 9. Eliminar el proyecto
     const project = await this.findOne(id);
     return this.projectRepository.remove(project);
   }

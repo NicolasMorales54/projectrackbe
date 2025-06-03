@@ -106,4 +106,12 @@ export class UsersService {
     const { contrasena, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  async getHashedPassword(
+    id: number,
+  ): Promise<{ hashedPassword: string } | null> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user || !user.contrasena) return null;
+    return { hashedPassword: user.contrasena };
+  }
 }

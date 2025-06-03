@@ -62,4 +62,9 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
+
+  @Get(':id/hashed-password')
+  async getHashedPassword(@Param('id') id: string) {
+    return this.usersService.getHashedPassword(+id);
+  }
 }

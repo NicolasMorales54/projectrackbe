@@ -1,26 +1,63 @@
+import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
-import { CreateNotificationDto } from './dto/create-notification.dto';
+import { Repository } from 'typeorm';
+
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+import { Notification } from './entities/notification.entity';
 
 @Injectable()
 export class NotificationsService {
-  create(createNotificationDto: CreateNotificationDto) {
-    return 'This action adds a new notification';
+  constructor(
+    @InjectRepository(Notification)
+    private readonly notificationRepository: Repository<Notification>,
+  ) {}
+
+  async create(createNotificationDto: CreateNotificationDto) {
+    const notification = this.notificationRepository.create({
+      ...createNotificationDto,
+      leida: createNotificationDto.leida ?? false,
+    });
+    return this.notificationRepository.save(notification);
   }
 
-  findAll() {
-    return `This action returns all notifications`;
+  async findAll() {
+    return this.notificationRepository.find({
+      order: { fechaCreacion: 'DESC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} notification`;
+  async findOne(id: number) {
+    return this.notificationRepository.findOneBy({ id });
   }
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
+  async findByUserId(userId: number) {
+    return this.notificationRepository.find({
+      where: { userId },
+      order: { fechaCreacion: 'DESC' },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+  async update(id: number, updateNotificationDto: UpdateNotificationDto) {
+    await this.notificationRepository.update(id, updateNotificationDto);
+    return this.findOne(id);
+  }
+
+  async remove(id: number) {
+    const notification = await this.findOne(id);
+    if (notification) {
+      await this.notificationRepository.delete(id);
+    }
+    return notification;
+  }
+
+  async markAsRead(id: number) {
+    await this.notificationRepository.update(id, { leida: true });
+    return this.findOne(id);
+  }
+
+  async markAllAsRead(userId: number) {
+    await this.notificationRepository.update({ userId }, { leida: true });
+    return this.findByUserId(userId);
   }
 }
